@@ -14,11 +14,7 @@ function getPriorityColor(priority) {
   return "mc-badge-indigo";
 }
 
-function getEffortColor(effort) {
-  if (effort === "Low") return "text-emerald-600 font-medium";
-  if (effort === "Medium") return "text-amber-600 font-medium";
-  return "text-rose-600 font-medium";
-}
+
 
 function InsightsPage() {
   const [month, setMonth] = useState(dayjs().format("YYYY-MM"));
