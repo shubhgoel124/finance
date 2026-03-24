@@ -64,8 +64,10 @@ async function completeWithOpenAi({ systemPrompt, userPrompt }) {
   return JSON.parse(text);
 }
 
+let hfFailedUntil = 0;
+
 async function completeWithHuggingFace({ systemPrompt, userPrompt }) {
-  if (!env.hfApiKey) {
+  if (!env.hfApiKey || Date.now() < hfFailedUntil) {
     return null;
   }
 
@@ -91,6 +93,11 @@ async function completeWithHuggingFace({ systemPrompt, userPrompt }) {
   });
 
   if (!resp.ok) {
+    if (resp.status === 402 || resp.status === 429) {
+      // Circuit breaker: back off for 1 minute on quota/rate limits
+      hfFailedUntil = Date.now() + 60000;
+      console.warn(`[llm] Hugging Face quota exceeded or rate limited (${resp.status}). Backing off for 60s.`);
+    }
     throw new Error(`Hugging Face API error: ${resp.status}`);
   }
 

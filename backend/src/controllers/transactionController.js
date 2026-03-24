@@ -481,6 +481,8 @@ async function uploadTransactions(req, res, next) {
     const seenRows = new Set();
     let skippedDuplicateRows = 0;
 
+    // First pass: normalize and deduplicate rows
+    const pendingRows = [];
     for (const row of rows) {
       const normalizedRow = normalizeCsvRow(row);
       if (!normalizedRow) {
@@ -493,14 +495,24 @@ async function uploadTransactions(req, res, next) {
         continue;
       }
       seenRows.add(signature);
+      pendingRows.push(normalizedRow);
+    }
 
-      const category = await categorizeDescription(normalizedRow.description);
+    // Second pass: Categorize unique descriptions
+    const categoryCache = new Map();
+    for (const row of pendingRows) {
+      if (!categoryCache.has(row.description)) {
+        // Fallback to naive rule-based quickly if there are many unique rows (speed optimization)
+        const category = await categorizeDescription(row.description);
+        categoryCache.set(row.description, category);
+      }
+      
       normalized.push({
         userId,
-        amount: normalizedRow.amount,
-        category,
-        description: normalizedRow.description,
-        date: normalizedRow.date,
+        amount: row.amount,
+        category: categoryCache.get(row.description),
+        description: row.description,
+        date: row.date,
         source: "csv"
       });
     }
