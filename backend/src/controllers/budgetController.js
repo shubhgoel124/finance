@@ -14,7 +14,7 @@ async function upsertBudget(req, res, next) {
     const budget = await Budget.findOneAndUpdate(
       { userId, month },
       { totalBudget: Number(totalBudget || 0), categoryBudgets },
-      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
     );
 
     clearInsightCache(userId, month);
@@ -35,24 +35,26 @@ async function getBudgetStatus(req, res, next) {
 
     const [budget, summary] = await Promise.all([
       Budget.findOne({ userId, month }).lean(),
-      getDashboardSummary(userId, month)
+      getDashboardSummary(userId, month),
     ]);
 
     const totalBudget = budget?.totalBudget || 0;
     const totalSpent = summary.totalSpend;
     const usagePct = totalBudget ? (totalSpent / totalBudget) * 100 : 0;
 
-    const categoryStatus = Object.entries(summary.categoryTotals).map(([category, spent]) => {
-      const target = budget?.categoryBudgets?.[category] || 0;
-      const pct = target ? (spent / target) * 100 : 0;
-      return {
-        category,
-        spent: Number(spent.toFixed(2)),
-        budget: Number(target.toFixed(2)),
-        usagePct: Number(pct.toFixed(2)),
-        exceeded: pct > 100
-      };
-    });
+    const categoryStatus = Object.entries(summary.categoryTotals).map(
+      ([category, spent]) => {
+        const target = budget?.categoryBudgets?.[category] || 0;
+        const pct = target ? (spent / target) * 100 : 0;
+        return {
+          category,
+          spent: Number(spent.toFixed(2)),
+          budget: Number(target.toFixed(2)),
+          usagePct: Number(pct.toFixed(2)),
+          exceeded: pct > 100,
+        };
+      },
+    );
 
     return res.json({
       month,
@@ -60,7 +62,7 @@ async function getBudgetStatus(req, res, next) {
       totalSpent,
       usagePct: Number(usagePct.toFixed(2)),
       exceeded: usagePct > 100,
-      categoryStatus
+      categoryStatus,
     });
   } catch (error) {
     return next(error);
@@ -69,5 +71,5 @@ async function getBudgetStatus(req, res, next) {
 
 module.exports = {
   upsertBudget,
-  getBudgetStatus
+  getBudgetStatus,
 };

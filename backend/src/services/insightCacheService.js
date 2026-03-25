@@ -30,5 +30,5 @@ module.exports = {
   getInsightCache,
   setInsightCache,
   clearInsightCache,
-  clearInsightCacheForMonths
+  clearInsightCacheForMonths,
 };

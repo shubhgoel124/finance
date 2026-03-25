@@ -13,13 +13,19 @@ function detectAnomalies(transactions) {
 
   const amounts = transactions.map((tx) => tx.amount);
   const mean = amounts.reduce((sum, val) => sum + val, 0) / amounts.length;
-  const variance = amounts.reduce((sum, val) => sum + (val - mean) ** 2, 0) / amounts.length;
+  const variance =
+    amounts.reduce((sum, val) => sum + (val - mean) ** 2, 0) / amounts.length;
   const stdDev = Math.sqrt(variance);
 
   return transactions.filter((tx) => tx.amount > mean + 2 * stdDev);
 }
 
-function calculateFinancialScore({ budgetUsagePct, savingsHintCount, anomalyCount, subscriptionLoad }) {
+function calculateFinancialScore({
+  budgetUsagePct,
+  savingsHintCount,
+  anomalyCount,
+  subscriptionLoad,
+}) {
   let score = 100;
   score -= Math.max(0, budgetUsagePct - 90) * 0.6;
   score -= anomalyCount * 4;
@@ -32,5 +38,5 @@ function calculateFinancialScore({ budgetUsagePct, savingsHintCount, anomalyCoun
 module.exports = {
   predictMonthEndSpend,
   detectAnomalies,
-  calculateFinancialScore
+  calculateFinancialScore,
 };

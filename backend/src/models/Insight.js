@@ -2,7 +2,12 @@ const mongoose = require("mongoose");
 
 const insightSchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
     month: { type: String, required: true, index: true },
     summary: { type: String, required: true },
     suggestions: [{ type: String }],
@@ -12,9 +17,17 @@ const insightSchema = new mongoose.Schema(
         title: { type: String },
         reason: { type: String },
         estimatedMonthlySavings: { type: Number, default: 0 },
-        effort: { type: String, enum: ["Low", "Medium", "High"], default: "Medium" },
-        priority: { type: String, enum: ["Low", "Medium", "High"], default: "Medium" }
-      }
+        effort: {
+          type: String,
+          enum: ["Low", "Medium", "High"],
+          default: "Medium",
+        },
+        priority: {
+          type: String,
+          enum: ["Low", "Medium", "High"],
+          default: "Medium",
+        },
+      },
     ],
     diagnostics: {
       monthOverMonthPct: { type: Number, default: 0 },
@@ -26,13 +39,17 @@ const insightSchema = new mongoose.Schema(
       anomalyCount: { type: Number, default: 0 },
       budgetUsagePct: { type: Number, default: 0 },
       projectedBudgetUsagePct: { type: Number, default: 0 },
-      riskLevel: { type: String, enum: ["Low", "Medium", "High"], default: "Low" }
+      riskLevel: {
+        type: String,
+        enum: ["Low", "Medium", "High"],
+        default: "Low",
+      },
     },
     financialScore: { type: Number, default: 50 },
     prediction: { type: Number, default: 0 },
-    anomalyCount: { type: Number, default: 0 }
+    anomalyCount: { type: Number, default: 0 },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 insightSchema.index({ userId: 1, month: 1 }, { unique: true });

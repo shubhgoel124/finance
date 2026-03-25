@@ -9,14 +9,14 @@ const {
   listTransactions,
   updateTransaction,
   deleteTransaction,
-  exportTransactions
+  exportTransactions,
 } = require("../controllers/transactionController");
 
 const router = express.Router();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: env.maxUploadSizeMb * 1024 * 1024
+    fileSize: env.maxUploadSizeMb * 1024 * 1024,
   },
   fileFilter: (req, file, callback) => {
     const extension = path.extname(file.originalname || "").toLowerCase();
@@ -27,7 +27,7 @@ const upload = multer({
       "application/csv",
       "application/vnd.ms-excel",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "text/plain"
+      "text/plain",
     ]);
 
     if (allowedExtensions.has(extension) || allowedMimeTypes.has(mimeType)) {
@@ -35,7 +35,7 @@ const upload = multer({
     }
 
     return callback(new multer.MulterError("LIMIT_UNEXPECTED_FILE", "file"));
-  }
+  },
 });
 
 router.use(auth);

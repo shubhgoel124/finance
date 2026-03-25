@@ -2,7 +2,9 @@ import { useMemo, useState } from "react";
 import { AuthContext } from "./auth-context";
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => localStorage.getItem("finance_token") || "");
+  const [token, setToken] = useState(
+    () => localStorage.getItem("finance_token") || "",
+  );
   const [user, setUser] = useState(() => {
     const raw = localStorage.getItem("finance_user");
     return raw ? JSON.parse(raw) : null;
@@ -28,9 +30,9 @@ export function AuthProvider({ children }) {
       user,
       login,
       logout,
-      isAuthenticated: Boolean(token)
+      isAuthenticated: Boolean(token),
     }),
-    [token, user]
+    [token, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

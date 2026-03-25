@@ -1,7 +1,13 @@
 const dayjs = require("dayjs");
-const { getDashboardSummary, getMonthlyTransactions } = require("../services/analyticsService");
+const {
+  getDashboardSummary,
+  getMonthlyTransactions,
+} = require("../services/analyticsService");
 const { detectSubscriptions } = require("../services/subscriptionService");
-const { detectAnomalies, predictMonthEndSpend } = require("../services/advancedAnalyticsService");
+const {
+  detectAnomalies,
+  predictMonthEndSpend,
+} = require("../services/advancedAnalyticsService");
 
 async function getDashboard(req, res, next) {
   try {
@@ -10,19 +16,23 @@ async function getDashboard(req, res, next) {
 
     const [summary, monthlyTransactions] = await Promise.all([
       getDashboardSummary(userId, month),
-      getMonthlyTransactions(userId, month)
+      getMonthlyTransactions(userId, month),
     ]);
 
     const subscriptions = detectSubscriptions(monthlyTransactions);
     const anomalies = detectAnomalies(monthlyTransactions);
     const now = dayjs();
-    const prediction = predictMonthEndSpend(summary.totalSpend, now.date(), now.daysInMonth());
+    const prediction = predictMonthEndSpend(
+      summary.totalSpend,
+      now.date(),
+      now.daysInMonth(),
+    );
 
     return res.json({
       ...summary,
       subscriptions,
       anomalies,
-      prediction
+      prediction,
     });
   } catch (error) {
     return next(error);
@@ -30,5 +40,5 @@ async function getDashboard(req, res, next) {
 }
 
 module.exports = {
-  getDashboard
+  getDashboard,
 };

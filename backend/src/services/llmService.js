@@ -2,7 +2,9 @@ const OpenAI = require("openai");
 const env = require("../config/env");
 const fetch = require("node-fetch");
 
-const openaiClient = env.openaiApiKey ? new OpenAI({ apiKey: env.openaiApiKey }) : null;
+const openaiClient = env.openaiApiKey
+  ? new OpenAI({ apiKey: env.openaiApiKey })
+  : null;
 
 function logProviderFailure(provider, error) {
   const message = error?.message || "Unknown error";
@@ -51,13 +53,13 @@ async function completeWithOpenAi({ systemPrompt, userPrompt }) {
     model: env.openaiModel,
     input: [
       { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt }
+      { role: "user", content: userPrompt },
     ],
     text: {
       format: {
-        type: "json_object"
-      }
-    }
+        type: "json_object",
+      },
+    },
   });
 
   const text = response.output_text || "{}";
@@ -77,26 +79,27 @@ async function completeWithHuggingFace({ systemPrompt, userPrompt }) {
     model,
     messages: [
       { role: "system", content: `${systemPrompt}\nReturn only valid JSON.` },
-      { role: "user", content: userPrompt }
+      { role: "user", content: userPrompt },
     ],
     max_tokens: 1024,
-    temperature: 0.3
+    temperature: 0.3,
   };
 
   const resp = await fetch(url, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${env.hfApiKey}`,
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
   });
 
   if (!resp.ok) {
     if (resp.status === 402 || resp.status === 429) {
-      // Circuit breaker: back off for 1 minute on quota/rate limits
       hfFailedUntil = Date.now() + 60000;
-      console.warn(`[llm] Hugging Face quota exceeded or rate limited (${resp.status}). Backing off for 60s.`);
+      console.warn(
+        `[llm] Hugging Face quota exceeded or rate limited (${resp.status}). Backing off for 60s.`,
+      );
     }
     throw new Error(`Hugging Face API error: ${resp.status}`);
   }
@@ -118,14 +121,20 @@ async function completeJson({ systemPrompt, userPrompt }) {
   for (const provider of providerOrder) {
     try {
       if (provider === "openai") {
-        const openAiResult = await completeWithOpenAi({ systemPrompt, userPrompt });
+        const openAiResult = await completeWithOpenAi({
+          systemPrompt,
+          userPrompt,
+        });
         if (openAiResult) {
           return openAiResult;
         }
       }
 
       if (provider === "huggingface") {
-        const huggingFaceResult = await completeWithHuggingFace({ systemPrompt, userPrompt });
+        const huggingFaceResult = await completeWithHuggingFace({
+          systemPrompt,
+          userPrompt,
+        });
         if (huggingFaceResult) {
           return huggingFaceResult;
         }
@@ -146,7 +155,7 @@ async function createEmbedding(text) {
   try {
     const response = await openaiClient.embeddings.create({
       model: env.openaiEmbeddingModel,
-      input: text
+      input: text,
     });
     return response.data?.[0]?.embedding || null;
   } catch (error) {
@@ -157,5 +166,5 @@ async function createEmbedding(text) {
 
 module.exports = {
   completeJson,
-  createEmbedding
+  createEmbedding,
 };

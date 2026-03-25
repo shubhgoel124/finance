@@ -21,7 +21,9 @@ function LoginPage() {
       login(data.token, data.user);
       navigate("/");
     } catch (err) {
-      setError(getApiErrorMessage(err, "Login failed. Please check your credentials."));
+      setError(
+        getApiErrorMessage(err, "Login failed. Please check your credentials."),
+      );
     } finally {
       setLoading(false);
     }
@@ -38,7 +40,9 @@ function LoginPage() {
     >
       <form onSubmit={onSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5 ml-1">Email Address</label>
+          <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5 ml-1">
+            Email Address
+          </label>
           <input
             type="email"
             required
@@ -51,7 +55,9 @@ function LoginPage() {
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5 ml-1">Password</label>
+          <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5 ml-1">
+            Password
+          </label>
           <input
             type="password"
             required
@@ -59,12 +65,14 @@ function LoginPage() {
             placeholder="••••••••"
             className="mc-input w-full"
             value={form.password}
-            onChange={(e) => setForm((s) => ({ ...s, password: e.target.value }))}
+            onChange={(e) =>
+              setForm((s) => ({ ...s, password: e.target.value }))
+            }
             disabled={loading}
           />
         </div>
-        <button 
-          className="mc-btn w-full mt-2" 
+        <button
+          className="mc-btn w-full mt-2"
           disabled={loading || !form.email || !form.password}
         >
           {loading ? "Signing in..." : "Sign In"}

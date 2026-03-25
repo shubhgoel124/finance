@@ -11,10 +11,17 @@ import {
   Legend,
   Area,
   AreaChart,
-  CartesianGrid
+  CartesianGrid,
 } from "recharts";
 
-const palette = ["#6366f1", "#10b981", "#f59e0b", "#8b5cf6", "#06b6d4", "#ec4899"];
+const palette = [
+  "#6366f1",
+  "#10b981",
+  "#f59e0b",
+  "#8b5cf6",
+  "#06b6d4",
+  "#ec4899",
+];
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -31,7 +38,10 @@ function CustomTooltip({ active, payload, label }) {
 }
 
 function ChartsPanel({ categoryTotals = {}, dailyTrend = [] }) {
-  const categoryData = Object.entries(categoryTotals).map(([name, value]) => ({ name, value }));
+  const categoryData = Object.entries(categoryTotals).map(([name, value]) => ({
+    name,
+    value,
+  }));
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -51,14 +61,20 @@ function ChartsPanel({ categoryTotals = {}, dailyTrend = [] }) {
                 cornerRadius={4}
               >
                 {categoryData.map((entry, index) => (
-                  <Cell key={entry.name} fill={palette[index % palette.length]} />
+                  <Cell
+                    key={entry.name}
+                    fill={palette[index % palette.length]}
+                  />
                 ))}
               </Pie>
               <Tooltip content={<CustomTooltip />} />
               <Legend
                 iconType="circle"
                 iconSize={8}
-                wrapperStyle={{ fontSize: "12px", color: "var(--text-secondary)" }}
+                wrapperStyle={{
+                  fontSize: "12px",
+                  color: "var(--text-secondary)",
+                }}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -77,9 +93,22 @@ function ChartsPanel({ categoryTotals = {}, dailyTrend = [] }) {
                   <stop offset="95%" stopColor="#6366f1" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light)" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="var(--border-light)"
+                vertical={false}
+              />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 11, fill: "var(--text-muted)" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: "var(--text-muted)" }}
+                axisLine={false}
+                tickLine={false}
+              />
               <Tooltip content={<CustomTooltip />} />
               <Area
                 type="monotone"

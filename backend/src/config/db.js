@@ -19,7 +19,9 @@ async function connectDb() {
       throw error;
     }
 
-    console.warn("Primary MongoDB unavailable. Falling back to in-memory MongoDB for development.");
+    console.warn(
+      "Primary MongoDB unavailable. Falling back to in-memory MongoDB for development.",
+    );
     memoryServer = await MongoMemoryServer.create();
     const uri = memoryServer.getUri();
     await mongoose.connect(uri);

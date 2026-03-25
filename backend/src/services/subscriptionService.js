@@ -1,7 +1,11 @@
 const dayjs = require("dayjs");
 
 function normalize(text = "") {
-  return text.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function detectSubscriptions(transactions) {
@@ -21,7 +25,9 @@ function detectSubscriptions(transactions) {
       continue;
     }
 
-    const sorted = [...items].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const sorted = [...items].sort(
+      (a, b) => new Date(a.date) - new Date(b.date),
+    );
     const gaps = [];
     for (let i = 1; i < sorted.length; i += 1) {
       const prev = dayjs(sorted[i - 1].date);
@@ -33,12 +39,13 @@ function detectSubscriptions(transactions) {
     const isMonthly = avgGap >= 25 && avgGap <= 35;
 
     if (isMonthly) {
-      const monthlyCost = sorted.reduce((sum, item) => sum + item.amount, 0) / sorted.length;
+      const monthlyCost =
+        sorted.reduce((sum, item) => sum + item.amount, 0) / sorted.length;
       const lastDate = dayjs(sorted[sorted.length - 1].date);
       subscriptions.push({
         description,
         monthlyCost: Number(monthlyCost.toFixed(2)),
-        renewalDate: lastDate.add(30, "day").format("YYYY-MM-DD")
+        renewalDate: lastDate.add(30, "day").format("YYYY-MM-DD"),
       });
     }
   }
@@ -47,5 +54,5 @@ function detectSubscriptions(transactions) {
 }
 
 module.exports = {
-  detectSubscriptions
+  detectSubscriptions,
 };

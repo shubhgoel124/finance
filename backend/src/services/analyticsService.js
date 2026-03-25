@@ -34,13 +34,16 @@ async function getMonthlyTransactions(userId, month) {
 
   return Transaction.find({
     userId,
-    date: { $gte: start.toDate(), $lte: end.toDate() }
+    date: { $gte: start.toDate(), $lte: end.toDate() },
   }).lean();
 }
 
 async function getDashboardSummary(userId, month) {
   const monthlyTransactions = await getMonthlyTransactions(userId, month);
-  const monthlyTotal = monthlyTransactions.reduce((sum, item) => sum + item.amount, 0);
+  const monthlyTotal = monthlyTransactions.reduce(
+    (sum, item) => sum + item.amount,
+    0,
+  );
   const categoryTotals = mapCategoryTotals(monthlyTransactions);
   const topCategories = Object.entries(categoryTotals)
     .map(([category, total]) => ({ category, total: Number(total.toFixed(2)) }))
@@ -54,11 +57,11 @@ async function getDashboardSummary(userId, month) {
     categoryTotals,
     topCategories,
     dailyTrend: mapTrend(monthlyTransactions, "day"),
-    weeklyTrend: mapTrend(monthlyTransactions, "week")
+    weeklyTrend: mapTrend(monthlyTransactions, "week"),
   };
 }
 
 module.exports = {
   getMonthlyTransactions,
-  getDashboardSummary
+  getDashboardSummary,
 };

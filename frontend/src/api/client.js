@@ -6,7 +6,10 @@ function resolveBaseUrl() {
     return configuredBaseUrl;
   }
 
-  if (typeof window !== "undefined" && !["localhost", "127.0.0.1"].includes(window.location.hostname)) {
+  if (
+    typeof window !== "undefined" &&
+    !["localhost", "127.0.0.1"].includes(window.location.hostname)
+  ) {
     return window.location.origin;
   }
 
@@ -15,7 +18,7 @@ function resolveBaseUrl() {
 
 const api = axios.create({
   baseURL: resolveBaseUrl(),
-  timeout: Number(import.meta.env.VITE_API_TIMEOUT_MS || 120000)
+  timeout: Number(import.meta.env.VITE_API_TIMEOUT_MS || 120000),
 });
 
 api.interceptors.request.use((config) => {

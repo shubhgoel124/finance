@@ -19,7 +19,9 @@ function AppLayout() {
         <header className="mb-6 flex items-center justify-between">
           <div>
             <p className="text-sm text-[var(--text-muted)]">Welcome back</p>
-            <h2 className="text-lg font-semibold">{user?.email || "Student"}</h2>
+            <h2 className="text-lg font-semibold">
+              {user?.email || "Student"}
+            </h2>
           </div>
           <button
             onClick={onLogout}

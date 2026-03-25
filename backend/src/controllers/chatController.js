@@ -18,7 +18,7 @@ const analyticsKeywords = [
   "total spend",
   "summary",
   "highest",
-  "largest"
+  "largest",
 ];
 
 const adviceKeywords = [
@@ -41,10 +41,18 @@ const adviceKeywords = [
   "spend less",
   "save",
   "cut costs",
-  "lower spending"
+  "lower spending",
 ];
 
-const comparisonKeywords = ["compare", "vs", "versus", "difference", "change", "last month", "previous month"];
+const comparisonKeywords = [
+  "compare",
+  "vs",
+  "versus",
+  "difference",
+  "change",
+  "last month",
+  "previous month",
+];
 
 const stopWords = new Set([
   "the",
@@ -75,13 +83,16 @@ const stopWords = new Set([
   "from",
   "show",
   "tell",
-  "about"
+  "about",
 ]);
 
 function getFocusMonth(query) {
   const lowerQuery = String(query || "").toLowerCase();
 
-  if (lowerQuery.includes("last month") || lowerQuery.includes("previous month")) {
+  if (
+    lowerQuery.includes("last month") ||
+    lowerQuery.includes("previous month")
+  ) {
     return dayjs().subtract(1, "month").format("YYYY-MM");
   }
 
@@ -91,7 +102,7 @@ function getFocusMonth(query) {
   }
 
   const namedMonthMatch = lowerQuery.match(
-    /\b(january|february|march|april|may|june|july|august|september|october|november|december)(?:\s+(20\d{2}))?\b/
+    /\b(january|february|march|april|may|june|july|august|september|october|november|december)(?:\s+(20\d{2}))?\b/,
   );
 
   if (namedMonthMatch) {
@@ -108,8 +119,8 @@ function getFocusMonth(query) {
         "september",
         "october",
         "november",
-        "december"
-      ].indexOf(namedMonthMatch[1]) + 1
+        "december",
+      ].indexOf(namedMonthMatch[1]) + 1,
     ).padStart(2, "0");
     const year = namedMonthMatch[2] || dayjs().format("YYYY");
     return `${year}-${monthNumber}`;
@@ -123,8 +134,8 @@ function tokenizeQuery(query) {
     new Set(
       String(query || "")
         .toLowerCase()
-        .match(/[a-z0-9]+/g) || []
-    )
+        .match(/[a-z0-9]+/g) || [],
+    ),
   ).filter((token) => token.length > 1 && !stopWords.has(token));
 }
 
@@ -134,11 +145,12 @@ function normalizeContextItem(item) {
   }
 
   return {
-    description: item.description || item.metadata?.description || "Unknown transaction",
+    description:
+      item.description || item.metadata?.description || "Unknown transaction",
     category: item.category || item.metadata?.category || "Other",
     amount: Number(item.amount ?? item.metadata?.amount ?? 0),
     date: item.date || item.metadata?.date || null,
-    score: Number((item.score || 0).toFixed(4))
+    score: Number((item.score || 0).toFixed(4)),
   };
 }
 
@@ -147,9 +159,17 @@ function scoreLexicalMatch(transaction, tokens) {
     return 0;
   }
 
-  const haystack = `${transaction.description} ${transaction.category}`.toLowerCase();
-  const tokenMatches = tokens.reduce((score, token) => (haystack.includes(token) ? score + 3 : score), 0);
-  const recencyScore = Math.max(0, 30 - Math.min(dayjs().diff(dayjs(transaction.date), "day"), 30)) / 30;
+  const haystack =
+    `${transaction.description} ${transaction.category}`.toLowerCase();
+  const tokenMatches = tokens.reduce(
+    (score, token) => (haystack.includes(token) ? score + 3 : score),
+    0,
+  );
+  const recencyScore =
+    Math.max(
+      0,
+      30 - Math.min(dayjs().diff(dayjs(transaction.date), "day"), 30),
+    ) / 30;
 
   return tokenMatches + recencyScore;
 }
@@ -158,9 +178,13 @@ function detectIntent(query) {
   const lowerQuery = String(query || "").toLowerCase();
 
   return {
-    analytics: analyticsKeywords.some((keyword) => lowerQuery.includes(keyword)),
+    analytics: analyticsKeywords.some((keyword) =>
+      lowerQuery.includes(keyword),
+    ),
     advice: adviceKeywords.some((keyword) => lowerQuery.includes(keyword)),
-    comparison: comparisonKeywords.some((keyword) => lowerQuery.includes(keyword))
+    comparison: comparisonKeywords.some((keyword) =>
+      lowerQuery.includes(keyword),
+    ),
   };
 }
 
@@ -171,7 +195,7 @@ async function getDatabaseContext(userId, query, focusMonth) {
 
   const candidates = await Transaction.find({
     userId,
-    date: { $gte: monthStart, $lte: monthEnd }
+    date: { $gte: monthStart, $lte: monthEnd },
   })
     .sort({ date: -1 })
     .limit(200)
@@ -180,7 +204,7 @@ async function getDatabaseContext(userId, query, focusMonth) {
   const ranked = candidates
     .map((transaction) => ({
       ...transaction,
-      score: scoreLexicalMatch(transaction, tokens)
+      score: scoreLexicalMatch(transaction, tokens),
     }))
     .sort((a, b) => {
       if (b.score !== a.score) {
@@ -228,7 +252,12 @@ async function getRelevantContext(userId, query, focusMonth) {
 
     const key = `${normalized.date}|${normalized.description}|${normalized.amount}`;
     const existing = merged.get(key);
-    merged.set(key, existing ? { ...normalized, score: Math.max(existing.score, normalized.score) } : normalized);
+    merged.set(
+      key,
+      existing
+        ? { ...normalized, score: Math.max(existing.score, normalized.score) }
+        : normalized,
+    );
   }
 
   return Array.from(merged.values())
@@ -261,27 +290,34 @@ function getTopCategoryShare(summary) {
 function buildAdvice(summary, context) {
   const topCategory = summary.topCategories[0];
   const topCategoryShare = getTopCategoryShare(summary);
-  const largestTransaction = [...context].sort((a, b) => b.amount - a.amount)[0];
+  const largestTransaction = [...context].sort(
+    (a, b) => b.amount - a.amount,
+  )[0];
   const suggestions = [];
 
   if (topCategory && topCategoryShare >= 35) {
     suggestions.push(
       `Start with ${topCategory.category}. It accounts for ${percent(topCategoryShare)} of spending, so even a 15% cut there saves about ${currency(
-        topCategory.total * 0.15
-      )}.`
+        topCategory.total * 0.15,
+      )}.`,
     );
   }
 
   if (largestTransaction) {
     suggestions.push(
       `Review large discretionary spends like ${largestTransaction.description} (${currency(
-        largestTransaction.amount
-      )}) before smaller items.`
+        largestTransaction.amount,
+      )}) before smaller items.`,
     );
   }
 
-  const weeklySavingsTarget = Math.max(50, Math.round(summary.totalSpend * 0.1));
-  suggestions.push(`Set a weekly savings target of ${currency(weeklySavingsTarget)} until your top category comes down.`);
+  const weeklySavingsTarget = Math.max(
+    50,
+    Math.round(summary.totalSpend * 0.1),
+  );
+  suggestions.push(
+    `Set a weekly savings target of ${currency(weeklySavingsTarget)} until your top category comes down.`,
+  );
 
   return suggestions;
 }
@@ -294,12 +330,20 @@ function buildComparisonLine(summary, previousSummary) {
   const difference = summary.totalSpend - previousSummary.totalSpend;
   const direction = difference >= 0 ? "up" : "down";
   const absoluteDifference = Math.abs(difference);
-  const changePct = previousSummary.totalSpend ? (absoluteDifference / previousSummary.totalSpend) * 100 : 0;
+  const changePct = previousSummary.totalSpend
+    ? (absoluteDifference / previousSummary.totalSpend) * 100
+    : 0;
 
   return `Compared with the previous month, spending is ${direction} by ${currency(absoluteDifference)} (${percent(changePct)}).`;
 }
 
-function buildDeterministicAnswer({ query, focusMonth, summary, previousSummary, context }) {
+function buildDeterministicAnswer({
+  query,
+  focusMonth,
+  summary,
+  previousSummary,
+  context,
+}) {
   const monthLabel = dayjs(`${focusMonth}-01`).format("MMMM YYYY");
   const intent = detectIntent(query);
 
@@ -311,14 +355,17 @@ function buildDeterministicAnswer({ query, focusMonth, summary, previousSummary,
   const topCategoryShare = getTopCategoryShare(summary);
   const topExamples = context
     .slice(0, 3)
-    .map((item) => `${item.description} on ${dayjs(item.date).format("DD MMM")} (${currency(item.amount)})`);
+    .map(
+      (item) =>
+        `${item.description} on ${dayjs(item.date).format("DD MMM")} (${currency(item.amount)})`,
+    );
   const lines = [
-    `For ${monthLabel}, you spent ${currency(summary.totalSpend)} across ${summary.transactionCount} transactions.`
+    `For ${monthLabel}, you spent ${currency(summary.totalSpend)} across ${summary.transactionCount} transactions.`,
   ];
 
   if (topCategory) {
     lines.push(
-      `Your highest spending category was ${topCategory.category} at ${currency(topCategory.total)} (${percent(topCategoryShare)} of the month).`
+      `Your highest spending category was ${topCategory.category} at ${currency(topCategory.total)} (${percent(topCategoryShare)} of the month).`,
     );
   }
 
@@ -327,7 +374,7 @@ function buildDeterministicAnswer({ query, focusMonth, summary, previousSummary,
       `Next biggest categories were ${summary.topCategories
         .slice(1, 3)
         .map((item) => `${item.category} ${currency(item.total)}`)
-        .join(", ")}.`
+        .join(", ")}.`,
     );
   }
 
@@ -342,7 +389,9 @@ function buildDeterministicAnswer({ query, focusMonth, summary, previousSummary,
   if (intent.advice || intent.analytics) {
     lines.push(`What to do next: ${buildAdvice(summary, context).join(" ")}`);
   } else {
-    lines.push("Ask me to compare months, explain a category spike, or suggest a savings target if you want a deeper answer.");
+    lines.push(
+      "Ask me to compare months, explain a category spike, or suggest a savings target if you want a deeper answer.",
+    );
   }
 
   return lines.join("\n");
@@ -354,8 +403,10 @@ function buildFollowUps(summary, focusMonth) {
 
   return [
     `Compare ${monthLabel} with last month`,
-    topCategory ? `Why is ${topCategory} high this month?` : "Show my biggest expenses this month",
-    "Suggest a weekly savings target"
+    topCategory
+      ? `Why is ${topCategory} high this month?`
+      : "Show my biggest expenses this month",
+    "Suggest a weekly savings target",
   ];
 }
 
@@ -363,18 +414,22 @@ async function chat(req, res, next) {
   try {
     const userId = req.user.id;
     const query = String(req.body.query || "").trim();
-    const history = Array.isArray(req.body.history) ? req.body.history.slice(-8) : [];
+    const history = Array.isArray(req.body.history)
+      ? req.body.history.slice(-8)
+      : [];
 
     if (!query) {
       return res.status(400).json({ message: "query is required" });
     }
 
     const focusMonth = getFocusMonth(query);
-    const previousMonth = dayjs(`${focusMonth}-01`).subtract(1, "month").format("YYYY-MM");
+    const previousMonth = dayjs(`${focusMonth}-01`)
+      .subtract(1, "month")
+      .format("YYYY-MM");
     const [summary, previousSummary, context] = await Promise.all([
       getDashboardSummary(userId, focusMonth),
       getDashboardSummary(userId, previousMonth),
-      getRelevantContext(userId, query, focusMonth)
+      getRelevantContext(userId, query, focusMonth),
     ]);
 
     const deterministicAnswer = buildDeterministicAnswer({
@@ -382,22 +437,35 @@ async function chat(req, res, next) {
       focusMonth,
       summary,
       previousSummary,
-      context
+      context,
     });
     const followUps = buildFollowUps(summary, focusMonth);
     const intent = detectIntent(query);
 
-    if (!summary.transactionCount || intent.analytics || intent.advice || intent.comparison) {
+    if (
+      !summary.transactionCount ||
+      intent.analytics ||
+      intent.advice ||
+      intent.comparison
+    ) {
       return res.json({
         answer: deterministicAnswer,
         followUps,
-        retrievedContext: context
+        retrievedContext: context,
       });
     }
 
     const compactHistory = history
-      .filter((item) => item && (item.role === "user" || item.role === "assistant") && item.content)
-      .map((item) => ({ role: item.role, content: String(item.content).slice(0, 500) }));
+      .filter(
+        (item) =>
+          item &&
+          (item.role === "user" || item.role === "assistant") &&
+          item.content,
+      )
+      .map((item) => ({
+        role: item.role,
+        content: String(item.content).slice(0, 500),
+      }));
 
     const llm = await completeJson({
       systemPrompt:
@@ -411,16 +479,16 @@ async function chat(req, res, next) {
           totalSpend: summary.totalSpend,
           transactionCount: summary.transactionCount,
           topCategories: summary.topCategories,
-          categoryTotals: summary.categoryTotals
+          categoryTotals: summary.categoryTotals,
         },
-        context
-      })
+        context,
+      }),
     });
 
     return res.json({
       answer: llm?.answer || deterministicAnswer,
       followUps: llm?.followUps?.length ? llm.followUps.slice(0, 3) : followUps,
-      retrievedContext: context
+      retrievedContext: context,
     });
   } catch (error) {
     return next(error);
@@ -428,5 +496,5 @@ async function chat(req, res, next) {
 }
 
 module.exports = {
-  chat
+  chat,
 };

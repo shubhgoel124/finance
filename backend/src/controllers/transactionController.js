@@ -8,7 +8,9 @@ const { categorizeDescription } = require("../services/categorizationService");
 const parseQuickAdd = require("../utils/quickAddParser");
 const { generateEmbedding } = require("../services/embeddingService");
 const { upsertVectors } = require("../services/vectorStoreService");
-const { clearInsightCacheForMonths } = require("../services/insightCacheService");
+const {
+  clearInsightCacheForMonths,
+} = require("../services/insightCacheService");
 
 dayjs.extend(customParseFormat);
 
@@ -58,7 +60,10 @@ function parseAmount(raw) {
     }
   } else if (cleaned.includes(",") && !cleaned.includes(".")) {
     const parts = cleaned.split(",");
-    cleaned = parts.length === 2 && parts[1].length <= 2 ? parts.join(".") : parts.join("");
+    cleaned =
+      parts.length === 2 && parts[1].length <= 2
+        ? parts.join(".")
+        : parts.join("");
   }
 
   const parsed = Number(cleaned);
@@ -76,7 +81,7 @@ function transactionSignature(transaction) {
   return [
     dayjs(transaction.date).format("YYYY-MM-DD"),
     normalizeDescription(transaction.description),
-    Number(transaction.amount).toFixed(2)
+    Number(transaction.amount).toFixed(2),
   ].join("|");
 }
 
@@ -114,8 +119,6 @@ function parseDateValue(raw) {
   }
 
   const value = String(raw).trim();
-
-  // Excel serial date support (commonly seen in exported statements)
   if (/^\d{5,}$/.test(value)) {
     const serial = Number(value);
     if (Number.isFinite(serial)) {
@@ -128,7 +131,14 @@ function parseDateValue(raw) {
     }
   }
 
-  const formats = ["YYYY-MM-DD", "DD-MM-YYYY", "DD/MM/YYYY", "MM/DD/YYYY", "YYYY/MM/DD", "DD MMM YYYY"];
+  const formats = [
+    "YYYY-MM-DD",
+    "DD-MM-YYYY",
+    "DD/MM/YYYY",
+    "MM/DD/YYYY",
+    "YYYY/MM/DD",
+    "DD MMM YYYY",
+  ];
 
   for (const fmt of formats) {
     const parsed = dayjs(raw, fmt, true);
@@ -146,19 +156,17 @@ function parseDateValue(raw) {
 }
 
 function normalizeCsvRow(row) {
-  // --- Paytm Status filter: skip FAILED transactions ---
   const status = getRowValue(row, ["status", "transaction status"]);
   if (status && /fail|rejected|cancelled|pending/i.test(status)) {
     return null;
   }
-
-  // --- Paytm "Paid To/Received From" filter: skip received (income) ---
-  const paidDirection = getRowValue(row, ["paid to/received from", "paid to / received from"]);
+  const paidDirection = getRowValue(row, [
+    "paid to/received from",
+    "paid to / received from",
+  ]);
   if (paidDirection && /received/i.test(paidDirection)) {
     return null;
   }
-
-  // --- Description: try many column variants including Paytm-specific ---
   let description = getRowValue(row, [
     "description",
     "transaction description",
@@ -172,36 +180,47 @@ function normalizeCsvRow(row) {
     "reference",
     "remark",
     "remarks",
-    "transaction remarks",                   // Paytm Bank Statement
-    "activity",                              // Paytm Wallet History
-    "transaction details",                   // Paytm Passbook Payment History (real format)
-    "name of person/business",               // Paytm UPI Statement
+    "transaction remarks",
+    "activity",
+    "transaction details",
+    "name of person/business",
     "name of person / business",
     "name",
     "beneficiary",
     "receiver name",
     "sender name",
-    "comment",                               // Paytm Wallet (fallback)
-    "notes/tags",                            // Paytm UPI (fallback)
+    "comment",
+    "notes/tags",
     "notes",
-    "tags"
+    "tags",
   ]);
-
-  // Paytm: merge description with comment/notes for richer context
   if (description) {
-    const nameCol = getRowValue(row, ["name of person/business", "name of person / business", "transaction details"]);
-    const notesCol = getRowValue(row, ["notes/tags", "notes", "comment", "remarks"]);
-    if (nameCol && notesCol && nameCol !== notesCol && description === nameCol) {
+    const nameCol = getRowValue(row, [
+      "name of person/business",
+      "name of person / business",
+      "transaction details",
+    ]);
+    const notesCol = getRowValue(row, [
+      "notes/tags",
+      "notes",
+      "comment",
+      "remarks",
+    ]);
+    if (
+      nameCol &&
+      notesCol &&
+      nameCol !== notesCol &&
+      description === nameCol
+    ) {
       description = `${nameCol} - ${notesCol}`;
     }
   }
-
-  // --- Skip income/received rows based on description ---
-  if (description && /^(received from|money received|cashback|refund from)/i.test(description)) {
+  if (
+    description &&
+    /^(received from|money received|cashback|refund from)/i.test(description)
+  ) {
     return null;
   }
-
-  // --- Date ---
   const dateRaw = getRowValue(row, [
     "date",
     "posted date",
@@ -209,23 +228,25 @@ function normalizeCsvRow(row) {
     "transactiondate",
     "transaction date",
     "txn date",
-    "value date"
+    "value date",
   ]);
   const parsedDate = parseDateValue(dateRaw);
-
-  // --- Amount parsing: handle all variants ---
   const directAmount = parseAmount(
     getRowValue(row, [
       "amount",
       "transaction amount",
       "transaction amount (inr)",
       "txn amount",
-      "amt"
-    ])
+      "amt",
+    ]),
   );
 
   const txnType = getRowValue(row, [
-    "type", "transaction type", "txn type", "dr/cr", "drcr"
+    "type",
+    "transaction type",
+    "txn type",
+    "dr/cr",
+    "drcr",
   ]).toLowerCase();
 
   const debitAmount = parseAmount(
@@ -234,10 +255,10 @@ function normalizeCsvRow(row) {
       "withdrawal",
       "withdrawal amt",
       "withdrawal amount",
-      "withdrawal amount (inr)",             // Paytm Bank Statement
+      "withdrawal amount (inr)",
       "dr",
-      "dr amount"
-    ])
+      "dr amount",
+    ]),
   );
   const creditAmount = parseAmount(
     getRowValue(row, [
@@ -245,31 +266,37 @@ function normalizeCsvRow(row) {
       "deposit",
       "deposit amt",
       "deposit amount",
-      "deposit amount (inr)",                // Paytm Bank Statement
+      "deposit amount (inr)",
       "cr",
-      "cr amount"
-    ])
+      "cr amount",
+    ]),
   );
-
-  // Prefer debit/withdrawal columns when available, since app tracks expenses.
-  let amount = Number.isFinite(debitAmount) && debitAmount > 0 ? debitAmount : directAmount;
+  let amount =
+    Number.isFinite(debitAmount) && debitAmount > 0
+      ? debitAmount
+      : directAmount;
 
   if (Number.isFinite(directAmount) && directAmount < 0) {
     amount = Math.abs(directAmount);
   }
-
-  // Paytm UPI: "Amount" column + "Transaction Type" = DEBIT/CREDIT
-  if (Number.isFinite(directAmount) && directAmount > 0 && ["dr", "debit", "withdrawal"].includes(txnType)) {
+  if (
+    Number.isFinite(directAmount) &&
+    directAmount > 0 &&
+    ["dr", "debit", "withdrawal"].includes(txnType)
+  ) {
     amount = directAmount;
   }
-
-  // Skip credit/income rows
-  if (Number.isFinite(directAmount) && ["cr", "credit", "deposit", "received"].includes(txnType)) {
+  if (
+    Number.isFinite(directAmount) &&
+    ["cr", "credit", "deposit", "received"].includes(txnType)
+  ) {
     return null;
   }
-
-  // If only credit exists and no debit/direct amount, skip as non-expense transaction.
-  if ((!Number.isFinite(amount) || amount <= 0) && Number.isFinite(creditAmount) && creditAmount > 0) {
+  if (
+    (!Number.isFinite(amount) || amount <= 0) &&
+    Number.isFinite(creditAmount) &&
+    creditAmount > 0
+  ) {
     return null;
   }
 
@@ -280,7 +307,7 @@ function normalizeCsvRow(row) {
   return {
     amount: Math.abs(amount),
     description,
-    date: parsedDate
+    date: parsedDate,
   };
 }
 
@@ -292,9 +319,17 @@ function scoreParsedRows(rows) {
   const firstRowKeys = Object.keys(rows[0] || {});
   const joinedKeys = firstRowKeys.join(" ");
   const looksCollapsed = firstRowKeys.length <= 1 && /[,;\t|]/.test(joinedKeys);
-  const hasUsefulHeaders = /(date|description|narration|amount|debit|credit|activity|withdrawal|transaction remarks|transaction details|name of person)/i.test(joinedKeys);
+  const hasUsefulHeaders =
+    /(date|description|narration|amount|debit|credit|activity|withdrawal|transaction remarks|transaction details|name of person)/i.test(
+      joinedKeys,
+    );
 
-  return rows.length * 10 + firstRowKeys.length * 5 + (hasUsefulHeaders ? 25 : 0) - (looksCollapsed ? 50 : 0);
+  return (
+    rows.length * 10 +
+    firstRowKeys.length * 5 +
+    (hasUsefulHeaders ? 25 : 0) -
+    (looksCollapsed ? 50 : 0)
+  );
 }
 
 function parseCsvRows(csvBuffer) {
@@ -306,7 +341,7 @@ function parseCsvRows(csvBuffer) {
     bom: true,
     relax_column_count: true,
     skip_records_with_error: true,
-    relax_quotes: true
+    relax_quotes: true,
   };
 
   let bestRows = [];
@@ -338,15 +373,13 @@ function parseXlsxRows(buffer) {
   if (!workbook.SheetNames.length) {
     throw new Error("No sheets found in the Excel file.");
   }
-
-  // Try all sheets and pick the one with the best score (most usable data)
   let bestRows = [];
   let bestScore = Number.NEGATIVE_INFINITY;
 
   for (const sheetName of workbook.SheetNames) {
     const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
       defval: "",
-      raw: false
+      raw: false,
     });
     if (!rows.length) {
       continue;
@@ -378,7 +411,9 @@ async function safeIndexTransactions(userId, transactions) {
     const vectors = [];
 
     for (const tx of transactions) {
-      const vector = await generateEmbedding(`${tx.description} ${tx.category} ${tx.amount}`);
+      const vector = await generateEmbedding(
+        `${tx.description} ${tx.category} ${tx.amount}`,
+      );
       if (!vector?.length) {
         continue;
       }
@@ -392,8 +427,8 @@ async function safeIndexTransactions(userId, transactions) {
           description: tx.description,
           category: tx.category,
           amount: tx.amount,
-          date: dayjs(tx.date).format("YYYY-MM-DD")
-        }
+          date: dayjs(tx.date).format("YYYY-MM-DD"),
+        },
       });
     }
 
@@ -417,26 +452,32 @@ async function createTransaction(req, res, next) {
       amount,
       category,
       description,
-      date
+      date,
     };
 
     if (quickAdd) {
       const parsed = parseQuickAdd(quickAdd);
       if (!parsed) {
-        return res.status(400).json({ message: "Could not parse quick add input" });
+        return res
+          .status(400)
+          .json({ message: "Could not parse quick add input" });
       }
       payload = {
         ...payload,
         ...parsed,
-        category: payload.category || (await categorizeDescription(parsed.description))
+        category:
+          payload.category || (await categorizeDescription(parsed.description)),
       };
     }
 
     if (!payload.amount || !payload.description || !payload.date) {
-      return res.status(400).json({ message: "amount, description, and date are required" });
+      return res
+        .status(400)
+        .json({ message: "amount, description, and date are required" });
     }
 
-    const resolvedCategory = payload.category || (await categorizeDescription(payload.description));
+    const resolvedCategory =
+      payload.category || (await categorizeDescription(payload.description));
 
     const transaction = await Transaction.create({
       userId,
@@ -444,12 +485,14 @@ async function createTransaction(req, res, next) {
       category: resolvedCategory,
       description: payload.description,
       date: new Date(payload.date),
-      source: "manual"
+      source: "manual",
     });
 
     const indexingWarning = await safeIndexTransactions(userId, [transaction]);
 
-    const responsePayload = transaction.toObject ? transaction.toObject() : transaction;
+    const responsePayload = transaction.toObject
+      ? transaction.toObject()
+      : transaction;
     if (indexingWarning) {
       responsePayload.warning = indexingWarning;
     }
@@ -472,7 +515,8 @@ async function uploadTransactions(req, res, next) {
       rows = parseUploadedFile(req.file);
     } catch (error) {
       error.status = 400;
-      error.message = "Unable to parse file. Use a CSV or Excel statement export with date, description, and amount/debit columns.";
+      error.message =
+        "Unable to parse file. Use a CSV or Excel statement export with date, description, and amount/debit columns.";
       throw error;
     }
 
@@ -480,8 +524,6 @@ async function uploadTransactions(req, res, next) {
     const normalized = [];
     const seenRows = new Set();
     let skippedDuplicateRows = 0;
-
-    // First pass: normalize and deduplicate rows
     const pendingRows = [];
     for (const row of rows) {
       const normalizedRow = normalizeCsvRow(row);
@@ -497,30 +539,27 @@ async function uploadTransactions(req, res, next) {
       seenRows.add(signature);
       pendingRows.push(normalizedRow);
     }
-
-    // Second pass: Categorize unique descriptions
     const categoryCache = new Map();
     for (const row of pendingRows) {
       if (!categoryCache.has(row.description)) {
-        // Fallback to naive rule-based quickly if there are many unique rows (speed optimization)
         const category = await categorizeDescription(row.description);
         categoryCache.set(row.description, category);
       }
-      
+
       normalized.push({
         userId,
         amount: row.amount,
         category: categoryCache.get(row.description),
         description: row.description,
         date: row.date,
-        source: "csv"
+        source: "csv",
       });
     }
 
     if (!normalized.length) {
       return res.status(400).json({
         message:
-          "No valid expense rows found. Ensure CSV includes date, description/narration, and amount/debit columns with positive values."
+          "No valid expense rows found. Ensure CSV includes date, description/narration, and amount/debit columns with positive values.",
       });
     }
 
@@ -530,28 +569,37 @@ async function uploadTransactions(req, res, next) {
         userId,
         date: {
           $gte: new Date(Math.min(...normalizedDates)),
-          $lte: new Date(Math.max(...normalizedDates))
-        }
+          $lte: new Date(Math.max(...normalizedDates)),
+        },
       },
-      { amount: 1, description: 1, date: 1 }
+      { amount: 1, description: 1, date: 1 },
     ).lean();
 
-    const existingSignatures = new Set(existingTransactions.map((item) => transactionSignature(item)));
-    const recordsToInsert = normalized.filter((item) => !existingSignatures.has(transactionSignature(item)));
+    const existingSignatures = new Set(
+      existingTransactions.map((item) => transactionSignature(item)),
+    );
+    const recordsToInsert = normalized.filter(
+      (item) => !existingSignatures.has(transactionSignature(item)),
+    );
     const skippedExistingRows = normalized.length - recordsToInsert.length;
 
     if (!recordsToInsert.length) {
       return res.json({
-        message: "All valid rows in this CSV already exist in your transactions.",
+        message:
+          "All valid rows in this CSV already exist in your transactions.",
         count: 0,
         skippedCount: rows.length,
-        duplicateCount: skippedDuplicateRows + skippedExistingRows
+        duplicateCount: skippedDuplicateRows + skippedExistingRows,
       });
     }
 
-    const inserted = await Transaction.insertMany(recordsToInsert, { ordered: true });
+    const inserted = await Transaction.insertMany(recordsToInsert, {
+      ordered: true,
+    });
     const indexingWarning = await safeIndexTransactions(userId, inserted);
-    const impactedMonths = Array.from(new Set(inserted.map((item) => getTransactionMonth(item.date))));
+    const impactedMonths = Array.from(
+      new Set(inserted.map((item) => getTransactionMonth(item.date))),
+    );
 
     clearInsightCacheForMonths(userId, impactedMonths);
 
@@ -560,7 +608,7 @@ async function uploadTransactions(req, res, next) {
       skippedCount: Math.max(rows.length - inserted.length, 0),
       duplicateCount: skippedDuplicateRows + skippedExistingRows,
       warning: indexingWarning || undefined,
-      transactions: inserted
+      transactions: inserted,
     });
   } catch (error) {
     return next(error);
@@ -587,7 +635,9 @@ async function listTransactions(req, res, next) {
       query.source = source;
     }
 
-    const transactions = await Transaction.find(query).sort({ date: -1 }).lean();
+    const transactions = await Transaction.find(query)
+      .sort({ date: -1 })
+      .lean();
     return res.json(transactions);
   } catch (error) {
     return next(error);
@@ -604,12 +654,19 @@ async function updateTransaction(req, res, next) {
       return res.status(404).json({ message: "Transaction not found" });
     }
 
-    const tx = await Transaction.findOneAndUpdate({ _id: id, userId }, req.body, {
-      returnDocument: "after",
-      runValidators: true
-    });
+    const tx = await Transaction.findOneAndUpdate(
+      { _id: id, userId },
+      req.body,
+      {
+        returnDocument: "after",
+        runValidators: true,
+      },
+    );
 
-    clearInsightCacheForMonths(userId, [getTransactionMonth(existing.date), getTransactionMonth(tx.date)]);
+    clearInsightCacheForMonths(userId, [
+      getTransactionMonth(existing.date),
+      getTransactionMonth(tx.date),
+    ]);
 
     return res.json(tx);
   } catch (error) {
@@ -643,11 +700,13 @@ async function exportTransactions(req, res, next) {
     if (month) {
       query.date = {
         $gte: dayjs(`${month}-01`).startOf("month").toDate(),
-        $lte: dayjs(`${month}-01`).endOf("month").toDate()
+        $lte: dayjs(`${month}-01`).endOf("month").toDate(),
       };
     }
 
-    const transactions = await Transaction.find(query).sort({ date: -1 }).lean();
+    const transactions = await Transaction.find(query)
+      .sort({ date: -1 })
+      .lean();
     const header = "date,description,category,source,amount";
     const rows = transactions.map((tx) => {
       const safeDescription = String(tx.description || "").replace(/"/g, '""');
@@ -656,7 +715,10 @@ async function exportTransactions(req, res, next) {
 
     const csv = [header, ...rows].join("\n");
     res.setHeader("Content-Type", "text/csv");
-    res.setHeader("Content-Disposition", `attachment; filename=transactions-${month || "all"}.csv`);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=transactions-${month || "all"}.csv`,
+    );
     return res.send(csv);
   } catch (error) {
     return next(error);
@@ -669,5 +731,5 @@ module.exports = {
   listTransactions,
   updateTransaction,
   deleteTransaction,
-  exportTransactions
+  exportTransactions,
 };

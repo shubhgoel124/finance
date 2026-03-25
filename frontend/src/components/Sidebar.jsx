@@ -7,7 +7,7 @@ import {
   MessageSquareText,
   ChartNoAxesCombined,
   Compass,
-  HelpCircle
+  HelpCircle,
 } from "lucide-react";
 
 const items = [
@@ -16,30 +16,32 @@ const items = [
   { to: "/transactions", label: "Transactions", icon: ReceiptText },
   { to: "/insights", label: "Insights", icon: Sparkles },
   { to: "/chat", label: "Chat", icon: MessageSquareText },
-  { to: "/analytics", label: "Analytics", icon: ChartNoAxesCombined }
+  { to: "/analytics", label: "Analytics", icon: ChartNoAxesCombined },
 ];
 
 function Sidebar() {
   return (
     <aside className="w-full md:w-64 lg:w-[260px] md:min-h-screen border-b md:border-b-0 md:border-r border-[var(--border)] bg-[var(--bg-surface)]">
       <div className="p-5">
-        {/* Logo */}
+        {}
         <div className="flex items-center gap-2.5 mb-8">
           <div className="w-8 h-8 rounded-lg bg-[var(--accent)] flex items-center justify-center">
             <Compass size={18} className="text-white" />
           </div>
           <div>
             <h1 className="text-base font-bold leading-tight">Money Compass</h1>
-            <p className="text-[11px] text-[var(--text-muted)]">Smart Finance</p>
+            <p className="text-[11px] text-[var(--text-muted)]">
+              Smart Finance
+            </p>
           </div>
         </div>
 
-        {/* Nav label */}
+        {}
         <p className="text-[11px] uppercase tracking-[0.1em] text-[var(--text-muted)] font-medium mb-2 px-3">
           Menu
         </p>
 
-        {/* Nav items */}
+        {}
         <nav className="space-y-0.5">
           {items.map((item) => {
             const NavIcon = item.icon;
@@ -63,7 +65,7 @@ function Sidebar() {
           })}
         </nav>
 
-        {/* Help link */}
+        {}
         <div className="mt-8 px-3">
           <a
             href="#"

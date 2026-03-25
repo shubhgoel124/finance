@@ -41,5 +41,5 @@ function cosineSimilarity(vecA, vecB) {
 
 module.exports = {
   generateEmbedding,
-  cosineSimilarity
+  cosineSimilarity,
 };

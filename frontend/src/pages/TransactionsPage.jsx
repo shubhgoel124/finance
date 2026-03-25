@@ -50,7 +50,7 @@ function TransactionsPage() {
       setError("");
       const response = await api.get("/transactions/export", {
         params: { month },
-        responseType: "blob"
+        responseType: "blob",
       });
       const url = window.URL.createObjectURL(response.data);
       const anchor = document.createElement("a");
@@ -70,14 +70,14 @@ function TransactionsPage() {
         subtitle={`Viewing ${transactions.length} record${transactions.length === 1 ? "" : "s"} for this month.`}
         right={
           <div className="flex items-center gap-3">
-            <input 
-              type="month" 
-              value={month} 
-              onChange={(e) => setMonth(e.target.value)} 
-              className="mc-input md:w-[160px]" 
+            <input
+              type="month"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="mc-input md:w-[160px]"
             />
-            <button 
-              onClick={exportCsv} 
+            <button
+              onClick={exportCsv}
               className="mc-btn whitespace-nowrap"
               disabled={transactions.length === 0}
             >
@@ -87,14 +87,14 @@ function TransactionsPage() {
           </div>
         }
       />
-      
+
       {error ? (
         <div className="flex items-center gap-3 p-4 rounded-xl bg-[var(--rose-light)] text-[var(--rose)] text-sm animate-slide">
           <AlertCircle size={18} />
           <p className="font-medium">{error}</p>
         </div>
       ) : null}
-      
+
       <TransactionTable transactions={transactions} onDelete={onDelete} />
     </div>
   );

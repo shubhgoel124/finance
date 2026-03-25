@@ -19,12 +19,16 @@ function parseQuickAdd(input = "") {
     date = date.subtract(1, "day");
   }
 
-  const description = raw.replace(amountMatch[0], "").replace(/yesterday|today/gi, "").trim() || "Expense";
+  const description =
+    raw
+      .replace(amountMatch[0], "")
+      .replace(/yesterday|today/gi, "")
+      .trim() || "Expense";
 
   return {
     amount,
     description,
-    date: date.toDate()
+    date: date.toDate(),
   };
 }
 

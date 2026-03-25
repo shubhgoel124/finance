@@ -23,13 +23,17 @@ const allowOrigins = new Set([...configuredOrigins]);
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowOrigins.has(origin) || localhostDevOriginRegex.test(origin)) {
+      if (
+        !origin ||
+        allowOrigins.has(origin) ||
+        localhostDevOriginRegex.test(origin)
+      ) {
         return callback(null, true);
       }
       return callback(new Error("Not allowed by CORS"));
     },
-    credentials: true
-  })
+    credentials: true,
+  }),
 );
 app.use(express.json({ limit: "1mb" }));
 

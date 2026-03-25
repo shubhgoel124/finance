@@ -11,8 +11,8 @@ async function categorizeDescription(description) {
   try {
     llmResult = await completeJson({
       systemPrompt:
-        "You categorize student expense descriptions into exactly one category: Food, Travel, Shopping, Bills, Subscriptions, Other. Return JSON: {\"category\":\"...\"}",
-      userPrompt: `Description: ${description}`
+        'You categorize student expense descriptions into exactly one category: Food, Travel, Shopping, Bills, Subscriptions, Other. Return JSON: {"category":"..."}',
+      userPrompt: `Description: ${description}`,
     });
   } catch (error) {
     llmResult = null;
@@ -26,5 +26,5 @@ async function categorizeDescription(description) {
 }
 
 module.exports = {
-  categorizeDescription
+  categorizeDescription,
 };

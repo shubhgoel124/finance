@@ -1,15 +1,21 @@
 const dayjs = require("dayjs");
 const Insight = require("../models/Insight");
 const Budget = require("../models/Budget");
-const { getDashboardSummary, getMonthlyTransactions } = require("../services/analyticsService");
+const {
+  getDashboardSummary,
+  getMonthlyTransactions,
+} = require("../services/analyticsService");
 const { detectSubscriptions } = require("../services/subscriptionService");
 const {
   predictMonthEndSpend,
   detectAnomalies,
-  calculateFinancialScore
+  calculateFinancialScore,
 } = require("../services/advancedAnalyticsService");
 const { completeJson } = require("../services/llmService");
-const { getInsightCache, setInsightCache } = require("../services/insightCacheService");
+const {
+  getInsightCache,
+  setInsightCache,
+} = require("../services/insightCacheService");
 
 function safePercent(numerator, denominator) {
   if (!denominator) {
@@ -22,25 +28,51 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-function buildDiagnostics({ summary, previousSummary, budget, subscriptions, anomalies, prediction }) {
+function buildDiagnostics({
+  summary,
+  previousSummary,
+  budget,
+  subscriptions,
+  anomalies,
+  prediction,
+}) {
   const prevTotal = previousSummary?.totalSpend || 0;
   const monthOverMonthPct = prevTotal
     ? Number((((summary.totalSpend - prevTotal) / prevTotal) * 100).toFixed(2))
     : 0;
 
   const topCategory = summary.topCategories?.[0] || null;
-  const topCategoryShare = topCategory ? safePercent(topCategory.total, summary.totalSpend) : 0;
-  const subscriptionTotal = subscriptions.reduce((sum, item) => sum + item.monthlyCost, 0);
-  const subscriptionSharePct = safePercent(subscriptionTotal, summary.totalSpend);
+  const topCategoryShare = topCategory
+    ? safePercent(topCategory.total, summary.totalSpend)
+    : 0;
+  const subscriptionTotal = subscriptions.reduce(
+    (sum, item) => sum + item.monthlyCost,
+    0,
+  );
+  const subscriptionSharePct = safePercent(
+    subscriptionTotal,
+    summary.totalSpend,
+  );
   const anomalySpend = anomalies.reduce((sum, item) => sum + item.amount, 0);
 
-  const budgetUsagePct = budget?.totalBudget ? safePercent(summary.totalSpend, budget.totalBudget) : 0;
-  const projectedBudgetUsagePct = budget?.totalBudget ? safePercent(prediction, budget.totalBudget) : 0;
+  const budgetUsagePct = budget?.totalBudget
+    ? safePercent(summary.totalSpend, budget.totalBudget)
+    : 0;
+  const projectedBudgetUsagePct = budget?.totalBudget
+    ? safePercent(prediction, budget.totalBudget)
+    : 0;
 
   let riskLevel = "Low";
-  if (projectedBudgetUsagePct > 100 || anomalySpend > summary.totalSpend * 0.2) {
+  if (
+    projectedBudgetUsagePct > 100 ||
+    anomalySpend > summary.totalSpend * 0.2
+  ) {
     riskLevel = "High";
-  } else if (projectedBudgetUsagePct > 90 || topCategoryShare > 45 || monthOverMonthPct > 20) {
+  } else if (
+    projectedBudgetUsagePct > 90 ||
+    topCategoryShare > 45 ||
+    monthOverMonthPct > 20
+  ) {
     riskLevel = "Medium";
   }
 
@@ -54,7 +86,7 @@ function buildDiagnostics({ summary, previousSummary, budget, subscriptions, ano
     anomalyCount: anomalies.length,
     budgetUsagePct,
     projectedBudgetUsagePct,
-    riskLevel
+    riskLevel,
   };
 }
 
@@ -67,7 +99,7 @@ function buildFallbackActions({ summary, diagnostics, subscriptions, budget }) {
       reason: "Your projected spend is above budget this month.",
       estimatedMonthlySavings: Number((summary.totalSpend * 0.08).toFixed(2)),
       effort: "Medium",
-      priority: "High"
+      priority: "High",
     });
   }
 
@@ -77,7 +109,7 @@ function buildFallbackActions({ summary, diagnostics, subscriptions, budget }) {
       reason: `${diagnostics.topCategory} is consuming ${diagnostics.topCategoryShare}% of monthly spend.`,
       estimatedMonthlySavings: Number((summary.totalSpend * 0.06).toFixed(2)),
       effort: "Low",
-      priority: diagnostics.topCategoryShare > 45 ? "High" : "Medium"
+      priority: diagnostics.topCategoryShare > 45 ? "High" : "Medium",
     });
   }
 
@@ -85,29 +117,37 @@ function buildFallbackActions({ summary, diagnostics, subscriptions, budget }) {
     actions.push({
       title: "Trim or pause low-value subscriptions",
       reason: `You have ${subscriptions.length} recurring services active.`,
-      estimatedMonthlySavings: Number((diagnostics.subscriptionTotal * 0.3).toFixed(2)),
+      estimatedMonthlySavings: Number(
+        (diagnostics.subscriptionTotal * 0.3).toFixed(2),
+      ),
       effort: "Low",
-      priority: diagnostics.subscriptionSharePct > 20 ? "High" : "Medium"
+      priority: diagnostics.subscriptionSharePct > 20 ? "High" : "Medium",
     });
   }
 
   if (diagnostics.anomalyCount > 0) {
     actions.push({
       title: "Review unusual high-value transactions",
-      reason: "Detected spending spikes that can often be deferred or replaced.",
-      estimatedMonthlySavings: Number((diagnostics.anomalySpend * 0.25).toFixed(2)),
+      reason:
+        "Detected spending spikes that can often be deferred or replaced.",
+      estimatedMonthlySavings: Number(
+        (diagnostics.anomalySpend * 0.25).toFixed(2),
+      ),
       effort: "Medium",
-      priority: "Medium"
+      priority: "Medium",
     });
   }
 
   if (!actions.length) {
     actions.push({
       title: "Create an automatic weekly savings transfer",
-      reason: "A fixed transfer protects savings before discretionary spending begins.",
-      estimatedMonthlySavings: Number(clamp(summary.totalSpend * 0.05, 300, 3000).toFixed(2)),
+      reason:
+        "A fixed transfer protects savings before discretionary spending begins.",
+      estimatedMonthlySavings: Number(
+        clamp(summary.totalSpend * 0.05, 300, 3000).toFixed(2),
+      ),
       effort: "Low",
-      priority: "Medium"
+      priority: "Medium",
     });
   }
 
@@ -124,19 +164,26 @@ async function generateInsights(req, res, next) {
       return res.json({ ...cached, cached: true });
     }
 
-    const previousMonth = dayjs(`${month}-01`).subtract(1, "month").format("YYYY-MM");
+    const previousMonth = dayjs(`${month}-01`)
+      .subtract(1, "month")
+      .format("YYYY-MM");
 
-    const [summary, previousSummary, monthlyTransactions, budget] = await Promise.all([
-      getDashboardSummary(userId, month),
-      getDashboardSummary(userId, previousMonth),
-      getMonthlyTransactions(userId, month),
-      Budget.findOne({ userId, month }).lean()
-    ]);
+    const [summary, previousSummary, monthlyTransactions, budget] =
+      await Promise.all([
+        getDashboardSummary(userId, month),
+        getDashboardSummary(userId, previousMonth),
+        getMonthlyTransactions(userId, month),
+        Budget.findOne({ userId, month }).lean(),
+      ]);
 
     const subscriptions = detectSubscriptions(monthlyTransactions);
     const anomalies = detectAnomalies(monthlyTransactions);
     const now = dayjs();
-    const prediction = predictMonthEndSpend(summary.totalSpend, now.date(), now.daysInMonth());
+    const prediction = predictMonthEndSpend(
+      summary.totalSpend,
+      now.date(),
+      now.daysInMonth(),
+    );
 
     const diagnostics = buildDiagnostics({
       summary,
@@ -144,7 +191,7 @@ async function generateInsights(req, res, next) {
       budget,
       subscriptions,
       anomalies,
-      prediction
+      prediction,
     });
 
     const fallback = {
@@ -158,14 +205,19 @@ async function generateInsights(req, res, next) {
           : "Category concentration is balanced.",
         anomalies.length
           ? `Detected ${anomalies.length} anomaly transactions totaling ${diagnostics.anomalySpend.toFixed(2)}.`
-          : "No major anomalies detected."
+          : "No major anomalies detected.",
       ],
       suggestions: [
         "Set weekly caps for your top spending category.",
         "Review active subscriptions and cancel low-value ones.",
-        "Use cashbacks/student discounts for food and travel expenses."
+        "Use cashbacks/student discounts for food and travel expenses.",
       ],
-      prioritizedActions: buildFallbackActions({ summary, diagnostics, subscriptions, budget })
+      prioritizedActions: buildFallbackActions({
+        summary,
+        diagnostics,
+        subscriptions,
+        budget,
+      }),
     };
 
     const llm = await completeJson({
@@ -182,24 +234,36 @@ async function generateInsights(req, res, next) {
         prediction,
         budget: budget || null,
         diagnostics,
-        anomalies: anomalies.map((a) => ({ amount: a.amount, description: a.description })),
-        subscriptions
-      })
+        anomalies: anomalies.map((a) => ({
+          amount: a.amount,
+          description: a.description,
+        })),
+        subscriptions,
+      }),
     });
 
     const data = {
       summary: llm?.summary || fallback.summary,
-      wastefulPatterns: llm?.wastefulPatterns?.length ? llm.wastefulPatterns : fallback.wastefulPatterns,
-      suggestions: llm?.suggestions?.length ? llm.suggestions : fallback.suggestions,
+      wastefulPatterns: llm?.wastefulPatterns?.length
+        ? llm.wastefulPatterns
+        : fallback.wastefulPatterns,
+      suggestions: llm?.suggestions?.length
+        ? llm.suggestions
+        : fallback.suggestions,
       prioritizedActions:
-        llm?.prioritizedActions?.filter((item) => item?.title && item?.reason)?.slice(0, 4) || fallback.prioritizedActions
+        llm?.prioritizedActions
+          ?.filter((item) => item?.title && item?.reason)
+          ?.slice(0, 4) || fallback.prioritizedActions,
     };
 
     const financialScore = calculateFinancialScore({
       budgetUsagePct: diagnostics.budgetUsagePct,
       savingsHintCount: data.suggestions.length,
       anomalyCount: anomalies.length,
-      subscriptionLoad: subscriptions.reduce((sum, s) => sum + s.monthlyCost, 0)
+      subscriptionLoad: subscriptions.reduce(
+        (sum, s) => sum + s.monthlyCost,
+        0,
+      ),
     });
 
     const insight = await Insight.findOneAndUpdate(
@@ -209,13 +273,18 @@ async function generateInsights(req, res, next) {
         financialScore,
         prediction,
         anomalyCount: anomalies.length,
-        diagnostics
+        diagnostics,
       },
-      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
     );
 
     const totalSavingsOpportunity = Number(
-      (data.prioritizedActions || []).reduce((sum, item) => sum + Number(item.estimatedMonthlySavings || 0), 0).toFixed(2)
+      (data.prioritizedActions || [])
+        .reduce(
+          (sum, item) => sum + Number(item.estimatedMonthlySavings || 0),
+          0,
+        )
+        .toFixed(2),
     );
 
     const payload = {
@@ -229,7 +298,7 @@ async function generateInsights(req, res, next) {
       anomalyCount: anomalies.length,
       subscriptions,
       cached: false,
-      insightId: insight._id
+      insightId: insight._id,
     };
 
     setInsightCache(userId, month, payload);
@@ -240,5 +309,5 @@ async function generateInsights(req, res, next) {
 }
 
 module.exports = {
-  generateInsights
+  generateInsights,
 };

@@ -13,9 +13,10 @@ function errorHandler(err, req, res, next) {
 
   if (err.name === "ValidationError") {
     status = 400;
-    message = Object.values(err.errors || {})
-      .map((e) => e.message)
-      .join(", ") || err.message;
+    message =
+      Object.values(err.errors || {})
+        .map((e) => e.message)
+        .join(", ") || err.message;
   }
 
   if (err.name === "MulterError") {
@@ -34,7 +35,7 @@ function errorHandler(err, req, res, next) {
 
   return res.status(status).json({
     message,
-    details: process.env.NODE_ENV === "production" ? undefined : err.stack
+    details: process.env.NODE_ENV === "production" ? undefined : err.stack,
   });
 }
 

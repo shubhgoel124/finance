@@ -21,7 +21,9 @@ function SignupPage() {
       login(data.token, data.user);
       navigate("/");
     } catch (err) {
-      setError(getApiErrorMessage(err, "Signup failed. Please try a different email."));
+      setError(
+        getApiErrorMessage(err, "Signup failed. Please try a different email."),
+      );
     } finally {
       setLoading(false);
     }
@@ -38,7 +40,9 @@ function SignupPage() {
     >
       <form onSubmit={onSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5 ml-1">Email Address</label>
+          <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5 ml-1">
+            Email Address
+          </label>
           <input
             type="email"
             required
@@ -51,7 +55,9 @@ function SignupPage() {
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5 ml-1">Password</label>
+          <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5 ml-1">
+            Password
+          </label>
           <input
             type="password"
             required
@@ -60,12 +66,14 @@ function SignupPage() {
             placeholder="Min. 6 characters"
             className="mc-input w-full"
             value={form.password}
-            onChange={(e) => setForm((s) => ({ ...s, password: e.target.value }))}
+            onChange={(e) =>
+              setForm((s) => ({ ...s, password: e.target.value }))
+            }
             disabled={loading}
           />
         </div>
-        <button 
-          className="mc-btn w-full mt-2" 
+        <button
+          className="mc-btn w-full mt-2"
           disabled={loading || !form.email || form.password.length < 6}
         >
           {loading ? "Creating account..." : "Create Account"}

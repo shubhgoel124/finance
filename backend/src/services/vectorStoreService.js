@@ -19,7 +19,7 @@ async function upsertVectors(userId, vectors) {
     const records = vectors.map((item) => ({
       id: `${userId}-${item.id}`,
       values: item.vector,
-      metadata: item.metadata
+      metadata: item.metadata,
     }));
     await pineconeIndex.upsert(records);
     return;
@@ -36,12 +36,12 @@ async function queryVectors(userId, queryVector, topK = 8) {
       vector: queryVector,
       topK,
       includeMetadata: true,
-      filter: { userId: { $eq: String(userId) } }
+      filter: { userId: { $eq: String(userId) } },
     });
 
     return (result.matches || []).map((match) => ({
       score: match.score,
-      metadata: match.metadata || {}
+      metadata: match.metadata || {},
     }));
   }
 
@@ -50,7 +50,7 @@ async function queryVectors(userId, queryVector, topK = 8) {
   return existing
     .map((item) => ({
       score: cosineSimilarity(item.vector, queryVector),
-      metadata: item.metadata
+      metadata: item.metadata,
     }))
     .sort((a, b) => b.score - a.score)
     .slice(0, topK);
@@ -58,5 +58,5 @@ async function queryVectors(userId, queryVector, topK = 8) {
 
 module.exports = {
   upsertVectors,
-  queryVectors
+  queryVectors,
 };
