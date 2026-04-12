@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
-  CircleDollarSign,
+  IndianRupee,
   ReceiptText,
   Sparkles,
   MessageSquareText,
@@ -12,7 +12,7 @@ import {
 
 const items = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/add-expense", label: "Add Expense", icon: CircleDollarSign },
+  { to: "/add-expense", label: "Add Expense", icon: IndianRupee },
   { to: "/transactions", label: "Transactions", icon: ReceiptText },
   { to: "/insights", label: "Insights", icon: Sparkles },
   { to: "/chat", label: "Chat", icon: MessageSquareText },
